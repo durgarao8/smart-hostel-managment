@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Complaint Submitted</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #f0f4ff; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .card {
+    background: #fff; border-radius: 20px; box-shadow: 0 8px 40px rgba(15,27,53,.12);
+    padding: 3rem 2.5rem; text-align: center; max-width: 460px; width: 100%;
+    animation: pop .5s cubic-bezier(.175,.885,.32,1.275) both;
+  }
+  @keyframes pop { from { opacity:0; transform:scale(.8); } to { opacity:1; transform:none; } }
+  .checkmark {
+    width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; margin: 0 auto 1.5rem; box-shadow: 0 8px 24px rgba(16,185,129,.35);
+  }
+  h1 { font-family: 'Syne', sans-serif; font-size: 1.75rem; color: #0f1b35; margin-bottom: .5rem; }
+  p { color: #64748b; margin-bottom: 1rem; font-size: .95rem; }
+  .complaint-id {
+    background: #f0f4ff; border-radius: 10px; padding: 1rem;
+    margin: 1.5rem 0; border: 2px dashed #1a56db;
+  }
+  .complaint-id .label { font-size: .75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+  .complaint-id .id { font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800; color: #1a56db; line-height: 1; }
+  .deadline-note {
+    background: #fffbeb; border-radius: 8px; padding: .75rem; font-size: .82rem;
+    color: #92400e; border: 1px solid #fde68a; margin-bottom: 1.5rem;
+  }
+  .btn { display: inline-block; padding: .75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: .9rem; margin: .3rem; transition: transform .15s; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: #1a56db; color: #fff; }
+  .btn-outline { background: transparent; color: #1a56db; border: 2px solid #1a56db; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="checkmark">✓</div>
+  <h1>Complaint Submitted!</h1>
+  <p>Hi <strong>{{ name }}</strong>, your complaint has been received and will be reviewed by the warden.</p>
+  <div class="complaint-id">
+    <div class="label">Your Complaint ID</div>
+    <div class="id">#{{ complaint_id }}</div>
+  </div>
+  <div class="deadline-note">
+    ⏰ <strong>2-Day Resolution Deadline</strong> — If not resolved within 48 hours, your complaint will be automatically escalated.
+  </div>
+  <a href="/track?id={{ complaint_id }}" class="btn btn-primary">Track My Complaint</a>
+  <a href="/student" class="btn btn-outline">Submit Another</a>
+</div>
+</body>
+</html>

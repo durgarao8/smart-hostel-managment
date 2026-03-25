@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="60">
+<title>Warden Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --navy:#0f1b35; --blue:#1a56db; --sky:#3b82f6; --accent:#f59e0b; --light:#f0f4ff; --white:#fff; --muted:#64748b; --border:#e2e8f0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',sans-serif; background:#f8faff; min-height:100vh; }
+
+  /* SIDEBAR */
+  .layout { display:flex; min-height:100vh; }
+  aside {
+    width:220px; background:var(--navy); display:flex; flex-direction:column;
+    padding:1.5rem 1rem; position:fixed; top:0; left:0; height:100vh; z-index:50;
+  }
+  .sidebar-logo { font-family:'Syne',sans-serif; font-weight:800; color:#fff; font-size:1.1rem; margin-bottom:2rem; padding:.5rem; }
+  .sidebar-logo span { color:var(--accent); }
+  .nav-item {
+    display:flex; align-items:center; gap:.6rem; padding:.65rem .85rem; border-radius:8px;
+    color:#94a3b8; text-decoration:none; font-size:.88rem; font-weight:500; margin-bottom:.25rem;
+    transition:all .2s;
+  }
+  .nav-item:hover, .nav-item.active { background:rgba(255,255,255,.08); color:#fff; }
+  .nav-item .icon { font-size:1rem; }
+  .logout-btn {
+    margin-top:auto; display:flex; align-items:center; gap:.6rem; padding:.65rem .85rem;
+    border-radius:8px; color:#f87171; text-decoration:none; font-size:.88rem; font-weight:500;
+    transition:all .2s;
+  }
+  .logout-btn:hover { background:rgba(248,113,113,.1); }
+
+  /* MAIN */
+  main { margin-left:220px; padding:2rem; flex:1; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; }
+  .topbar h1 { font-family:'Syne',sans-serif; font-size:1.5rem; color:var(--navy); }
+  .topbar .refresh-note { font-size:.78rem; color:var(--muted); }
+
+  /* STAT CARDS */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
+  @media(max-width:900px) { .stats { grid-template-columns:repeat(2,1fr); } }
+  .stat-card {
+    background:#fff; border-radius:12px; padding:1.25rem 1.5rem;
+    border:1px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,.04);
+    display:flex; align-items:center; gap:1rem; transition:transform .15s;
+  }
+  .stat-card:hover { transform:translateY(-2px); }
+  .stat-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+  .stat-card.pending .stat-icon { background:#fef3c7; }
+  .stat-card.inprog .stat-icon { background:#dbeafe; }
+  .stat-card.resolved .stat-icon { background:#d1fae5; }
+  .stat-card.escalated .stat-icon { background:#fee2e2; }
+  .stat-num { font-family:'Syne',sans-serif; font-size:1.75rem; font-weight:800; color:var(--navy); line-height:1; }
+  .stat-label { font-size:.78rem; color:var(--muted); margin-top:.15rem; }
+
+  /* FILTERS */
+  .filters { display:flex; gap:.75rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+  .filters select, .filters input {
+    padding:.5rem .9rem; border:1.5px solid var(--border); border-radius:8px;
+    font-size:.85rem; outline:none; background:#fff; color:var(--navy);
+  }
+  .filters select:focus { border-color:var(--sky); }
+  .filter-btn {
+    padding:.5rem 1.1rem; background:var(--navy); color:#fff; border:none;
+    border-radius:8px; font-size:.85rem; font-weight:600; cursor:pointer;
+  }
+
+  /* TABLE */
+  .table-wrap { background:#fff; border-radius:14px; border:1px solid var(--border); box-shadow:0 2px 12px rgba(0,0,0,.04); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  th { background:var(--navy); color:#94a3b8; font-size:.72rem; text-transform:uppercase; letter-spacing:.8px; padding:.9rem 1rem; text-align:left; font-weight:600; }
+  td { padding:.85rem 1rem; border-bottom:1px solid #f1f5f9; font-size:.88rem; color:#374151; vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#fafbff; }
+
+  .badge { padding:.28rem .7rem; border-radius:12px; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+  .badge-Pending { background:#fef3c7; color:#92400e; }
+  .badge-In\ Progress { background:#dbeafe; color:#1e40af; }
+  .badge-Resolved { background:#d1fae5; color:#065f46; }
+  .badge-Escalated { background:#fee2e2; color:#991b1b; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+  .priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:.35rem; }
+  .p-Urgent { background:#ef4444; }
+  .p-High { background:#f97316; }
+  .p-Normal { background:#10b981; }
+
+  .photo-thumb { width:40px; height:40px; object-fit:cover; border-radius:6px; border:2px solid var(--border); }
+
+  /* ACTION BUTTONS */
+  .btn-sm { padding:.35rem .7rem; border-radius:6px; font-size:.78rem; font-weight:600; cursor:pointer; border:none; text-decoration:none; display:inline-block; transition:transform .1s; white-space:nowrap; }
+  .btn-sm:hover { transform:scale(1.04); }
+  .btn-resolve { background:#d1fae5; color:#065f46; }
+  .btn-delete { background:#fee2e2; color:#991b1b; }
+  .btn-assign { background:var(--light); color:var(--blue); border:1px solid #bfdbfe; }
+
+  /* ASSIGN MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#fff; border-radius:16px; padding:2rem; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+  .modal h3 { font-family:'Syne',sans-serif; font-size:1.1rem; color:var(--navy); margin-bottom:1.25rem; }
+  .modal select, .modal textarea { width:100%; margin-bottom:1rem; padding:.65rem .9rem; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:.9rem; }
+  .modal textarea { min-height:80px; resize:vertical; }
+  .modal-actions { display:flex; gap:.5rem; justify-content:flex-end; }
+  .btn-cancel { padding:.5rem 1rem; background:#f1f5f9; color:var(--navy); border:none; border-radius:8px; cursor:pointer; font-size:.85rem; }
+  .btn-confirm { padding:.5rem 1rem; background:var(--blue); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:.85rem; }
+
+  @media(max-width:768px) {
+    aside { display:none; }
+    main { margin-left:0; padding:1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="sidebar-logo">🏠 <span>Smart</span>Hostel</div>
+    <a href="/warden" class="nav-item active"><span class="icon">📋</span> All Complaints</a>
+    <a href="/warden?status=Pending" class="nav-item"><span class="icon">⏳</span> Pending</a>
+    <a href="/warden?status=In+Progress" class="nav-item"><span class="icon">🔧</span> In Progress</a>
+    <a href="/warden?status=Escalated" class="nav-item"><span class="icon">🚨</span> Escalated</a>
+    <a href="/warden?status=Resolved" class="nav-item"><span class="icon">✅</span> Resolved</a>
+    <a href="/analytics" class="nav-item"><span class="icon">📊</span> Analytics</a>
+    <a href="/student" class="nav-item"><span class="icon">👤</span> Student Portal</a>
+    <a href="/logout" class="logout-btn"><span class="icon">🚪</span> Logout</a>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <h1>Warden Dashboard</h1>
+      <span class="refresh-note">🔄 Auto-refreshes every 60s</span>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat-card pending">
+        <div class="stat-icon">⏳</div>
+        <div><div class="stat-num">{{ stats.pending }}</div><div class="stat-label">Pending</div></div>
+      </div>
+      <div class="stat-card inprog">
+        <div class="stat-icon">🔧</div>
+        <div><div class="stat-num">{{ stats.in_progress }}</div><div class="stat-label">In Progress</div></div>
+      </div>
+      <div class="stat-card resolved">
+        <div class="stat-icon">✅</div>
+        <div><div class="stat-num">{{ stats.resolved }}</div><div class="stat-label">Resolved</div></div>
+      </div>
+      <div class="stat-card escalated">
+        <div class="stat-icon">🚨</div>
+        <div><div class="stat-num">{{ stats.escalated }}</div><div class="stat-label">Escalated</div></div>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <form method="GET" class="filters">
+      <select name="status">
+        <option value="all" {% if status_filter=='all' %}selected{% endif %}>All Statuses</option>
+        <option value="Pending" {% if status_filter=='Pending' %}selected{% endif %}>Pending</option>
+        <option value="In Progress" {% if status_filter=='In Progress' %}selected{% endif %}>In Progress</option>
+        <option value="Resolved" {% if status_filter=='Resolved' %}selected{% endif %}>Resolved</option>
+        <option value="Escalated" {% if status_filter=='Escalated' %}selected{% endif %}>Escalated</option>
+      </select>
+      <select name="category">
+        <option value="all" {% if category_filter=='all' %}selected{% endif %}>All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat['category'] }}" {% if category_filter==cat['category'] %}selected{% endif %}>{{ cat['category'] }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="filter-btn">Filter</button>
+      <a href="/warden" style="padding:.5rem .9rem;color:var(--muted);text-decoration:none;font-size:.85rem;align-self:center;">Clear</a>
+    </form>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Photo</th><th>Student</th><th>Room</th>
+            <th>Category</th><th>Priority</th><th>Issue</th>
+            <th>Submitted</th><th>Status</th><th>Assigned</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in complaints %}
+          <tr>
+            <td><strong>#{{ row['id'] }}</strong></td>
+            <td>
+              {% if row['photo'] %}
+              <a href="{{ url_for('static', filename='uploads/' + row['photo']) }}" target="_blank">
+                <img src="{{ url_for('static', filename='uploads/' + row['photo']) }}" class="photo-thumb">
+              </a>
+              {% else %}<span style="color:#cbd5e1;font-size:.8rem">No img</span>{% endif %}
+            </td>
+            <td>{{ row['name'] }}</td>
+            <td>{{ row['room_number'] or '—' }}</td>
+            <td>{{ row['category'] }}</td>
+            <td>
+              <span class="priority-dot p-{{ row['priority'] }}"></span>{{ row['priority'] }}
+            </td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ row['issue'] }}">{{ row['issue'] }}</td>
+            <td style="white-space:nowrap;font-size:.78rem;color:var(--muted)">{{ row['submitted_at'][:10] if row['submitted_at'] else '—' }}</td>
+            <td><span class="badge badge-{{ row['status'] }}">{{ row['status'] }}</span></td>
+            <td style="font-size:.78rem">{{ row['assigned_worker'] or '—' }}</td>
+            <td style="white-space:nowrap">
+              {% if row['status'] not in ['Resolved'] %}
+              <button class="btn-sm btn-assign" onclick="openAssign({{ row['id'] }}, '{{ row['name'] }}')">Assign</button>
+              {% endif %}
+              {% if row['status'] not in ['Resolved'] %}
+              <a href="/resolve/{{ row['id'] }}" class="btn-sm btn-resolve" onclick="return confirm('Mark as resolved?')">Resolve</a>
+              {% endif %}
+              <a href="/delete/{{ row['id'] }}" class="btn-sm btn-delete" onclick="return confirm('Delete permanently?')">Delete</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--muted)">No complaints found for the selected filter.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal-overlay" id="assignModal">
+  <div class="modal">
+    <h3>Assign Worker & Add Note</h3>
+    <form method="POST" id="assignForm">
+      <label style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;display:block">Assign to Worker</label>
+      <select name="worker">
+        {% for w in workers %}
+        <option value="{{ w['name'] }}">{{ w['name'] }}</option>
+        {% endfor %}
+      </select>
+      <label style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;display:block">Warden Note (optional)</label>
+      <textarea name="warden_note" placeholder="Add a note for the student or worker..."></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeAssign()">Cancel</button>
+        <button type="submit" class="btn-confirm">Assign & Start</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openAssign(id, name) {
+  document.getElementById('assignForm').action = '/assign/' + id;
+  document.getElementById('assignModal').classList.add('open');
+}
+function closeAssign() {
+  document.getElementById('assignModal').classList.remove('open');
+}
+document.getElementById('assignModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAssign();
+});
+</script>
+</body>
+</html>

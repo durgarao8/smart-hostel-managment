@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warden Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:'DM Sans',sans-serif;
+    background: linear-gradient(135deg, #0f1b35 0%, #1e3a5f 60%, #1a56db 100%);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem;
+  }
+  .card {
+    background:#fff; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,.35);
+    padding:2.5rem; width:100%; max-width:400px;
+    animation:slideUp .5s cubic-bezier(.175,.885,.32,1.275) both;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
+  .logo { text-align:center; margin-bottom:2rem; }
+  .logo .icon { font-size:3rem; display:block; margin-bottom:.5rem; }
+  .logo h1 { font-family:'Syne',sans-serif; font-size:1.4rem; color:#0f1b35; }
+  .logo p { font-size:.82rem; color:#64748b; margin-top:.25rem; }
+  .form-group { margin-bottom:1.25rem; }
+  label { display:block; font-size:.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:.375rem; }
+  input {
+    width:100%; padding:.75rem 1rem; border:1.5px solid #cbd5e1; border-radius:10px;
+    font-size:.95rem; outline:none; transition:border-color .2s, box-shadow .2s;
+    font-family:'DM Sans',sans-serif;
+  }
+  input:focus { border-color:#1a56db; box-shadow:0 0 0 3px rgba(26,86,219,.15); }
+  .btn {
+    width:100%; padding:.85rem; background:linear-gradient(135deg,#0f1b35,#1a56db);
+    color:#fff; border:none; border-radius:10px; font-family:'Syne',sans-serif;
+    font-weight:700; font-size:1rem; cursor:pointer; transition:transform .15s, box-shadow .15s;
+    letter-spacing:.5px;
+  }
+  .btn:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(26,86,219,.4); }
+  .error { background:#fee2e2; border-radius:8px; padding:.75rem 1rem; color:#991b1b; font-size:.85rem; margin-bottom:1rem; }
+  .footer { text-align:center; margin-top:1.5rem; }
+  .footer a { color:#64748b; font-size:.82rem; text-decoration:none; }
+  .footer a:hover { color:#1a56db; }
+  .hint { background:#f0f4ff; border-radius:8px; padding:.6rem .9rem; font-size:.78rem; color:#64748b; margin-top:1rem; text-align:center; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <span class="icon">🏠</span>
+    <h1>Warden Dashboard</h1>
+    <p>Smart Hostel Complaint Management</p>
+  </div>
+  {% if error %}
+  <div class="error">⚠️ {{ error }}</div>
+  {% endif %}
+  <form method="POST" action="/login">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" name="username" placeholder="admin" autofocus required>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" name="password" placeholder="••••••••" required>
+    </div>
+    <button type="submit" class="btn">Enter Dashboard →</button>
+  </form>
+  <div class="hint">Demo credentials: <strong>admin</strong> / <strong>warden123</strong></div>
+  <div class="footer"><a href="/student">← Back to Student Portal</a></div>
+</div>
+</body>
+</html>

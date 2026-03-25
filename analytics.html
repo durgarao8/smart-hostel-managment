@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root { --navy:#0f1b35; --blue:#1a56db; --sky:#3b82f6; --accent:#f59e0b; --light:#f0f4ff; --white:#fff; --muted:#64748b; --border:#e2e8f0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',sans-serif; background:#f8faff; }
+  .layout { display:flex; min-height:100vh; }
+  aside {
+    width:220px; background:var(--navy); display:flex; flex-direction:column;
+    padding:1.5rem 1rem; position:fixed; top:0; left:0; height:100vh; z-index:50;
+  }
+  .sidebar-logo { font-family:'Syne',sans-serif; font-weight:800; color:#fff; font-size:1.1rem; margin-bottom:2rem; padding:.5rem; }
+  .sidebar-logo span { color:var(--accent); }
+  .nav-item { display:flex; align-items:center; gap:.6rem; padding:.65rem .85rem; border-radius:8px; color:#94a3b8; text-decoration:none; font-size:.88rem; font-weight:500; margin-bottom:.25rem; transition:all .2s; }
+  .nav-item:hover, .nav-item.active { background:rgba(255,255,255,.08); color:#fff; }
+  .logout-btn { margin-top:auto; display:flex; align-items:center; gap:.6rem; padding:.65rem .85rem; border-radius:8px; color:#f87171; text-decoration:none; font-size:.88rem; font-weight:500; }
+  main { margin-left:220px; padding:2rem; flex:1; }
+  h1 { font-family:'Syne',sans-serif; font-size:1.5rem; color:var(--navy); margin-bottom:2rem; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+  @media(max-width:900px) { .grid-2,.grid-3 { grid-template-columns:1fr; } aside { display:none; } main { margin-left:0; } }
+  .card { background:#fff; border-radius:14px; padding:1.5rem; border:1px solid var(--border); box-shadow:0 2px 12px rgba(0,0,0,.04); }
+  .card-title { font-family:'Syne',sans-serif; font-size:.95rem; font-weight:700; color:var(--navy); margin-bottom:1.25rem; }
+  .metric-card { background:#fff; border-radius:12px; padding:1.25rem 1.5rem; border:1px solid var(--border); text-align:center; }
+  .metric-num { font-family:'Syne',sans-serif; font-size:2rem; font-weight:800; color:var(--navy); }
+  .metric-label { font-size:.78rem; color:var(--muted); margin-top:.25rem; }
+  canvas { max-height:260px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="sidebar-logo">🏠 <span>Smart</span>Hostel</div>
+    <a href="/warden" class="nav-item"><span>📋</span> All Complaints</a>
+    <a href="/warden?status=Pending" class="nav-item"><span>⏳</span> Pending</a>
+    <a href="/warden?status=In+Progress" class="nav-item"><span>🔧</span> In Progress</a>
+    <a href="/warden?status=Escalated" class="nav-item"><span>🚨</span> Escalated</a>
+    <a href="/warden?status=Resolved" class="nav-item"><span>✅</span> Resolved</a>
+    <a href="/analytics" class="nav-item active"><span>📊</span> Analytics</a>
+    <a href="/student" class="nav-item"><span>👤</span> Student Portal</a>
+    <a href="/logout" class="logout-btn"><span>🚪</span> Logout</a>
+  </aside>
+
+  <main>
+    <h1>📊 Analytics Dashboard</h1>
+
+    <div class="grid-3">
+      <div class="metric-card">
+        <div class="metric-num">{{ by_status | sum(attribute='count') }}</div>
+        <div class="metric-label">Total Complaints</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num" style="color:#10b981">
+          {% for s in by_status %}{% if s['status']=='Resolved' %}{{ s['count'] }}{% endif %}{% endfor %}
+        </div>
+        <div class="metric-label">Resolved</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num" style="color:#f59e0b">
+          {{ "%.1f"|format(avg_resolution['avg_hours']) if avg_resolution and avg_resolution['avg_hours'] else '—' }}h
+        </div>
+        <div class="metric-label">Avg. Resolution Time</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Complaints by Category</div>
+        <canvas id="catChart"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">Status Breakdown</div>
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Priority Distribution</div>
+        <canvas id="prioChart"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">Complaints Over Last 14 Days</div>
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const colors = ['#1a56db','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899'];
+
+// Category chart
+new Chart(document.getElementById('catChart'), {
+  type: 'bar',
+  data: {
+    labels: [{% for r in by_category %}"{{ r['category'] }}"{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ data: [{% for r in by_category %}{{ r['count'] }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: colors, borderRadius: 6, borderSkipped: false }]
+  },
+  options: { plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true,grid:{color:'#f1f5f9'}}, x:{grid:{display:false}} }, responsive:true, maintainAspectRatio:true }
+});
+
+// Status doughnut
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for r in by_status %}"{{ r['status'] }}"{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ data: [{% for r in by_status %}{{ r['count'] }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: ['#fef3c7','#dbeafe','#d1fae5','#fee2e2'], borderColor: ['#f59e0b','#3b82f6','#10b981','#ef4444'], borderWidth: 2 }]
+  },
+  options: { plugins:{legend:{position:'bottom'}}, responsive:true, maintainAspectRatio:true }
+});
+
+// Priority pie
+new Chart(document.getElementById('prioChart'), {
+  type: 'pie',
+  data: {
+    labels: [{% for r in by_priority %}"{{ r['priority'] }}"{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ data: [{% for r in by_priority %}{{ r['count'] }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: ['#10b981','#f97316','#ef4444'] }]
+  },
+  options: { plugins:{legend:{position:'bottom'}}, responsive:true, maintainAspectRatio:true }
+});
+
+// Trend line
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: [{% for r in recent|reverse %}"{{ r['day'] }}"{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ label:'Complaints', data:[{% for r in recent|reverse %}{{ r['count'] }}{% if not loop.last %},{% endif %}{% endfor %}],
+      borderColor:'#1a56db', backgroundColor:'rgba(26,86,219,.1)', fill:true, tension:.4, pointBackgroundColor:'#1a56db' }]
+  },
+  options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}, responsive:true, maintainAspectRatio:true }
+});
+</script>
+</body>
+</html>

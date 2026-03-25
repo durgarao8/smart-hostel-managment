@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Complaint</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --navy:#0f1b35; --blue:#1a56db; --sky:#3b82f6; --accent:#f59e0b; --light:#f0f4ff; --muted:#64748b; --border:#cbd5e1; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',sans-serif; background:var(--light); min-height:100vh; }
+  nav { background:var(--navy); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; height:60px; }
+  nav .brand { font-family:'Syne',sans-serif; font-weight:800; color:#fff; }
+  nav .brand span { color:var(--accent); }
+  nav a { color:#94a3b8; text-decoration:none; font-size:.875rem; margin-left:1.5rem; }
+  nav a:hover { color:#fff; }
+  .page { max-width:640px; margin:0 auto; padding:2rem 1.5rem; }
+  h2 { font-family:'Syne',sans-serif; font-size:1.5rem; color:var(--navy); margin-bottom:1.5rem; }
+  .search-bar { display:flex; gap:.75rem; margin-bottom:2rem; }
+  .search-bar input {
+    flex:1; padding:.75rem 1rem; border:1.5px solid var(--border); border-radius:10px;
+    font-size:.95rem; outline:none;
+  }
+  .search-bar input:focus { border-color:var(--sky); }
+  .search-bar button {
+    padding:.75rem 1.5rem; background:var(--navy); color:#fff; border:none;
+    border-radius:10px; font-weight:600; cursor:pointer;
+  }
+  .complaint-card {
+    background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(15,27,53,.08);
+    border:1px solid var(--border); overflow:hidden; animation:fadeUp .4s ease;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+  .card-header {
+    background:var(--navy); padding:1.25rem 1.5rem; display:flex; justify-content:space-between; align-items:center;
+  }
+  .card-header h3 { font-family:'Syne',sans-serif; color:#fff; font-size:1.1rem; }
+  .badge {
+    padding:.35rem .85rem; border-radius:20px; font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px;
+  }
+  .badge-Pending { background:#fef3c7; color:#92400e; }
+  .badge-In\ Progress { background:#dbeafe; color:#1e40af; }
+  .badge-Resolved { background:#d1fae5; color:#065f46; }
+  .badge-Escalated { background:#fee2e2; color:#991b1b; }
+  .card-body { padding:1.5rem; }
+  .info-row { display:flex; gap:1rem; margin-bottom:.75rem; flex-wrap:wrap; }
+  .info-item { flex:1; min-width:160px; }
+  .info-item .label { font-size:.72rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); font-weight:600; margin-bottom:.25rem; }
+  .info-item .value { font-size:.95rem; color:var(--navy); font-weight:500; }
+  .issue-text { background:var(--light); border-radius:8px; padding:1rem; font-size:.9rem; color:#374151; line-height:1.6; margin:1rem 0; }
+  .timeline { margin-top:1.5rem; }
+  .timeline-title { font-family:'Syne',sans-serif; font-weight:700; font-size:.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem; }
+  .step { display:flex; gap:.75rem; margin-bottom:.75rem; }
+  .step-dot { width:28px; height:28px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.8rem; }
+  .step-done .step-dot { background:#10b981; color:#fff; }
+  .step-active .step-dot { background:var(--blue); color:#fff; box-shadow:0 0 0 4px rgba(26,86,219,.2); }
+  .step-pending .step-dot { background:var(--border); color:var(--muted); }
+  .step-info .step-label { font-size:.88rem; font-weight:600; color:var(--navy); }
+  .step-info .step-time { font-size:.78rem; color:var(--muted); }
+  .warden-note { background:#fffbeb; border-radius:8px; padding:.75rem 1rem; font-size:.85rem; color:#78350f; border:1px solid #fde68a; margin-top:1rem; }
+  .not-found { text-align:center; padding:3rem; background:#fff; border-radius:16px; }
+  .not-found .icon { font-size:3rem; margin-bottom:1rem; }
+  .not-found p { color:var(--muted); }
+</style>
+</head>
+<body>
+<nav>
+  <div class="brand">🏠 <span>Smart</span>Hostel</div>
+  <div>
+    <a href="/student">File Complaint</a>
+    <a href="/track">Track Status</a>
+    <a href="/login">Warden</a>
+  </div>
+</nav>
+<div class="page">
+  <h2>📍 Track Your Complaint</h2>
+
+  <form method="GET" action="/track" class="search-bar">
+    <input type="number" name="id" placeholder="Enter your Complaint ID (e.g. 7)"
+           value="{% if complaint %}{{ complaint['id'] }}{% endif %}">
+    <button type="submit">Search</button>
+  </form>
+
+  {% if searched and not complaint %}
+  <div class="not-found">
+    <div class="icon">🔍</div>
+    <h3 style="margin-bottom:.5rem">Complaint Not Found</h3>
+    <p>No complaint exists with that ID. Please check and try again.</p>
+  </div>
+  {% endif %}
+
+  {% if complaint %}
+  <div class="complaint-card">
+    <div class="card-header">
+      <h3>#{{ complaint['id'] }} — {{ complaint['category'] }}</h3>
+      <span class="badge badge-{{ complaint['status'] }}">{{ complaint['status'] }}</span>
+    </div>
+    <div class="card-body">
+      <div class="info-row">
+        <div class="info-item">
+          <div class="label">Student</div>
+          <div class="value">{{ complaint['name'] }}</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Room</div>
+          <div class="value">{{ complaint['room_number'] or '—' }}</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Priority</div>
+          <div class="value">{{ complaint['priority'] }}</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Submitted</div>
+          <div class="value">{{ complaint['submitted_at'][:16] if complaint['submitted_at'] else '—' }}</div>
+        </div>
+      </div>
+
+      <div class="issue-text">{{ complaint['issue'] }}</div>
+
+      {% if complaint['assigned_worker'] %}
+      <div class="info-item" style="margin-bottom:.75rem">
+        <div class="label">Assigned Worker</div>
+        <div class="value">🔧 {{ complaint['assigned_worker'] }}</div>
+      </div>
+      {% endif %}
+
+      {% if complaint['warden_note'] %}
+      <div class="warden-note">💬 <strong>Warden Note:</strong> {{ complaint['warden_note'] }}</div>
+      {% endif %}
+
+      <div class="timeline">
+        <div class="timeline-title">Resolution Timeline</div>
+
+        <div class="step step-done">
+          <div class="step-dot">✓</div>
+          <div class="step-info">
+            <div class="step-label">Complaint Submitted</div>
+            <div class="step-time">{{ complaint['submitted_at'][:16] if complaint['submitted_at'] else '' }}</div>
+          </div>
+        </div>
+
+        <div class="step {{ 'step-done' if complaint['status'] in ['In Progress','Resolved','Escalated'] else 'step-pending' }}">
+          <div class="step-dot">{{ '✓' if complaint['status'] in ['In Progress','Resolved','Escalated'] else '2' }}</div>
+          <div class="step-info">
+            <div class="step-label">Assigned to Worker</div>
+            <div class="step-time">{{ complaint['assigned_worker'] or 'Awaiting assignment' }}</div>
+          </div>
+        </div>
+
+        <div class="step {{ 'step-done' if complaint['status'] == 'Resolved' else ('step-active' if complaint['status'] == 'In Progress' else 'step-pending') }}">
+          <div class="step-dot">{{ '✓' if complaint['status'] == 'Resolved' else '3' }}</div>
+          <div class="step-info">
+            <div class="step-label">Resolved</div>
+            <div class="step-time">{{ complaint['resolved_at'][:16] if complaint['resolved_at'] else ('Deadline: ' + complaint['deadline'][:16] if complaint['deadline'] else 'Pending') }}</div>
+          </div>
+        </div>
+
+        {% if complaint['status'] == 'Escalated' %}
+        <div class="step step-active">
+          <div class="step-dot">⚠</div>
+          <div class="step-info">
+            <div class="step-label">Escalated to Chief Warden</div>
+            <div class="step-time">Deadline exceeded — under urgent review</div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not searched %}
+  <div class="not-found">
+    <div class="icon">📋</div>
+    <p>Enter your Complaint ID above to check the current status and progress.</p>
+  </div>
+  {% endif %}
+</div>
+</body>
+</html>
