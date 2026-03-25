@@ -1,0 +1,1 @@
+# smart-hostel-managment
